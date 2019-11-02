@@ -1,0 +1,188 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<style>
+
+    .table > tbody > tr > td.tr_parcela {
+        border: none !important;
+    }
+
+</style>
+
+<div class="row">
+    <div class="col-md-12">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Área Orçada</th>
+                    <th>Empresa Pagadora</th>
+                    <th>Valor</th>
+                    <th>Numero do Pedido</th>
+                    <th>Data de Pagamento</th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="tbody_result"></tbody>
+        </table>
+    </div>
+</div>
+
+@section scripts {
+<script>
+    $(document).ready(function() {
+
+        $.get('@Url.Action("GetData", "Home")', null,
+            function (response) {
+                var strHtml = ''
+                $.each(response.data, function (i, item) {
+                    strHtml += createTableRowParcela(item)
+                })
+                $(strHtml).appendTo('#tbody_result')
+            })
+            .fail(function (err) {
+                alert('errrroooooouuuuuuuuu')
+            })
+
+        
+    })// fim do load da pagina
+</script>
+<script>
+
+    function createTableRowParcela(item) {
+        var strHtml = ''
+
+        strHtml += `
+                <tr id="tr_parcela_${item.Id}">
+                    <td>${item.AreaOrcada}</td>
+                    <td>${item.EmpresaPagadora}</td>
+                    <td>${item.Valor}</td>
+                    <td>${item.NumeroPedido}</td>
+                    <td>${new Date(parseInt(item.DataPagamento.substr(6))).toLocaleDateString()}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" type="button" data-toggle="collapse" data-target="#collapseParcela_${item.Id}" aria-expanded="false" aria-controls="collapseParcela_${item.Id}">
+                            editar
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-primary" type="button" onclick="removerParcela(${item.Id})">
+                            remover
+                        </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="7" class="tr_parcela">
+                        <input type="hidden" id="hdnId_${item.Id}" value="${item.Id}" />
+                        <div class="collapse" id="collapseParcela_${item.Id}">
+                            <div class="well">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="areaOrcada">Área Orçada</label>
+                                            <input type="text" class="form-control" id="txtAreaOrcada_${item.Id}" placeholder="Área Orçada" value="${item.AreaOrcada}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="EmpresaPagadora">Empresa Pagadora</label>
+                                            <input type="text" class="form-control" id="txtEmpresaPagadora_${item.Id}" placeholder="Empresa Pagadora" value="${item.EmpresaPagadora}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="Valor">Valor</label>
+                                            <input type="text" class="form-control" id="txtValor_${item.Id}" placeholder="Valor parcela" value="${item.Valor}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="NumeroPedido">Numero do Pedido</label>
+                                            <input type="text" class="form-control" id="txtNumeroPedido_${item.Id}" placeholder="Numero do Pedido" value="${item.NumeroPedido}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">                                            
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label for="EmpresaPagadora">Data de Pagamento</label>
+                                            <input type="text" class="form-control" id="txtDataPagamento_${item.Id}" placeholder="Data de Pagamento" value="${new Date(parseInt(item.DataPagamento.substr(6))).toLocaleDateString()}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="pull-right">
+                                            <button type="submit" class="btn btn-default btn-sm" onclick="salvarAlteracoes(${item.Id})">Salvar alterações</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `
+        return strHtml
+    }
+
+
+    function salvarAlteracoes(idParcela) {
+        var AreaOrcada = $(`#txtAreaOrcada_${idParcela}`).val()
+        var EmpresaPagadora = $(`#txtEmpresaPagadora_${idParcela}`).val()
+        var Valor = $(`#txtValor_${idParcela}`).val()
+        var NumeroPedido = $(`#txtNumeroPedido_${idParcela}`).val()
+        var DataPagamento = $(`#txtDataPagamento_${idParcela}`).val()
+
+        var objParcela = {
+            Id: idParcela,
+            AreaOrcada: AreaOrcada,
+            EmpresaPagadora: EmpresaPagadora,
+            Valor: Valor,
+            NumeroPedido: NumeroPedido,
+            DataPagamento: DataPagamento
+        }
+
+        var obj = {
+            parcela: objParcela,
+            idPagamento: 10,
+            idProjeto: 50
+        }
+
+        $.post('@Url.Action("EditarParcela", "Home")', obj,
+
+            function (response) {
+                if (response.status == 'OK') {
+                    var item = response.data
+                    var strHtml = ''
+                    strHtml += createTableRowParcela(item)
+                    $(strHtml).appendTo('#tbody_result')
+                    alert('salvo com sucesso')
+                }                
+            }, 'json')
+
+            .fail(function (xhr, status, error) {
+                alert('errrroooooouuuuuuuuu')
+            })
+    }
+
+    function removerParcela(idParcela) {
+        var trId = `#tr_parcela_${idParcela}`
+
+        $.post('@Url.Action("DeletarParcela", "Home")', { idParcela: idParcela },
+
+            function (response) {
+                if (response.status == 'OK') {
+                    $(trId).remove()
+                    alert('removida com sucesso')
+                }                
+            }, 'json')
+
+            .fail(function (xhr, status, error) {
+                alert('errrroooooouuuuuuuuu')
+            })
+    }
+</script>
+}
